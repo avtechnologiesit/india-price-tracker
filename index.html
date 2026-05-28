@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>India Price Tracker — Amazon · Flipkart · Croma</title>
+<meta name="description" content="Compare live prices across Amazon India, Flipkart and Croma for any device using Claude AI.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh}
+.page{max-width:860px;margin:0 auto;padding:32px 20px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-icon{width:40px;height:40px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+.brand-name{font-size:17px;font-weight:700;color:#1a1a18}
+.brand-sub{font-size:11px;color:#888}
+.retailers{display:flex;gap:6px;flex-wrap:wrap}
+.r-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;border:1px solid}
+.card{background:#fff;border:1px solid #e0dfd8;border-radius:16px;padding:22px 24px;margin-bottom:18px}
+.search-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.search-row{display:flex;gap:8px}
+.search-input{flex:1;font-size:14px;padding:12px 15px;border:1.5px solid #e0dfd8;border-radius:11px;background:#f9f8f4;color:#1a1a18;outline:none;transition:border-color .15s;font-family:inherit}
+.search-input:focus{border-color:#1D9E75;background:#fff}
+.search-input::placeholder{color:#bbb}
+.btn-compare{font-size:13px;font-weight:700;padding:12px 22px;background:#1D9E75;color:#fff;border:none;border-radius:11px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:background .15s}
+.btn-compare:hover{background:#0F6E56}
+.btn-compare:disabled{opacity:.5;cursor:wait}
+.quick-row{display:flex;align-items:center;gap:7px;margin-top:13px;flex-wrap:wrap}
+.quick-lbl{font-size:11px;color:#bbb;white-space:nowrap}
+.quick-chip{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid #e0dfd8;background:#f5f4f0;color:#5f5e5a;cursor:pointer;transition:all .12s}
+.quick-chip:hover{background:#E1F5EE;border-color:#1D9E75;color:#085041}
+.api-row{display:flex;gap:8px;align-items:center;margin-top:15px;padding-top:15px;border-top:1px solid #f0efe8;flex-wrap:wrap}
+.api-lbl{font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.api-input{flex:1;min-width:220px;font-size:11px;padding:8px 11px;border:1px solid #e0dfd8;border-radius:9px;background:#f9f8f4;color:#1a1a18;font-family:monospace;outline:none}
+.api-input:focus{border-color:#1D9E75}
+.api-note{font-size:10px;color:#bbb}
+.api-link{font-size:10px;color:#1D9E75;text-decoration:none}
+.api-link:hover{text-decoration:underline}
+.empty{text-align:center;padding:60px 20px;color:#bbb}
+.empty-icon{font-size:44px;margin-bottom:14px}
+.empty-title{font-size:17px;font-weight:600;color:#5f5e5a;margin-bottom:8px}
+.empty-sub{font-size:13px;line-height:1.7}
+#results{display:none}
+.result-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:15px;gap:10px;flex-wrap:wrap}
+.result-product{font-size:16px;font-weight:700;color:#1a1a18;flex:1}
+.result-ts{font-size:11px;color:#bbb;margin-top:3px}
+.live-badge{font-size:11px;font-weight:700;padding:4px 11px;border-radius:5px;white-space:nowrap;align-self:flex-start}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:15px}
+.pcard{background:#fff;border:1px solid #e0dfd8;border-radius:14px;padding:16px 18px;position:relative;transition:transform .1s,box-shadow .1s}
+.pcard:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.07)}
+.pcard.best{border:2px solid #1D9E75}
+.pcard.unavail{opacity:.55}
+.wb{position:absolute;top:10px;right:10px;background:#1D9E75;color:#fff;font-size:9px;font-weight:700;padding:3px 7px;border-radius:4px;letter-spacing:.04em}
+.srow{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.sdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.snm{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em}
+.pv{font-size:28px;font-weight:800;color:#1a1a18;font-family:ui-monospace,monospace;letter-spacing:-.5px;margin-bottom:4px}
+.pv.na{font-size:16px;font-weight:400;color:#bbb}
+.pnote{font-size:11px;color:#888;margin-bottom:10px;min-height:14px}
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px}
+.pbest{background:#E1F5EE;color:#085041}
+.phi{background:#FCEBEB;color:#791F1F}
+.pmid{background:#F1EFE8;color:#5F5E5A}
+.pna{background:#F1F0E8;color:#888}
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}
+.acard{background:#fff;border:1px solid #e0dfd8;border-radius:13px;padding:14px 16px}
+.albl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.srow2{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0efe8;font-size:12px;color:#5f5e5a}
+.srow2:last-child{border:none}
+.sv{font-family:ui-monospace,monospace;font-weight:700;font-size:12px}
+.irow{display:flex;gap:9px;padding:5px 0;border-bottom:1px solid #f0efe8;align-items:flex-start}
+.irow:last-child{border:none}
+.ii{font-size:15px;flex-shrink:0;margin-top:1px}
+.it{font-size:11px;color:#5f5e5a;line-height:1.6}
+.it b{color:#1a1a18;font-weight:700}
+.rec{display:flex;align-items:flex-start;gap:13px;padding:15px 18px;background:#fff;border:1.5px solid #1D9E75;border-radius:14px;margin-bottom:15px}
+.rec-ico{width:36px;height:36px;background:#E1F5EE;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.rec-title{font-size:14px;font-weight:700;color:#1a1a18;margin-bottom:3px}
+.rec-desc{font-size:12px;color:#5f5e5a;line-height:1.6}
+.hist-wrap{background:#fff;border:1px solid #e0dfd8;border-radius:14px;padding:15px 18px;margin-bottom:15px}
+.hist-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.leg{display:flex;gap:13px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:#888}
+.ll{width:14px;height:2.5px;border-radius:2px}
+.skel{background:#f0efe8;border-radius:6px;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{grid-column:1/-1;padding:16px;text-align:center;font-size:13px;color:#A32D2D;background:#FCEBEB;border-radius:11px}
+.foot{font-size:10px;color:#bbb;line-height:1.7;margin-top:8px;padding-top:10px;border-top:1px solid #f0efe8}
+@media(max-width:520px){.analysis-grid{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🔍</div>
+      <div>
+        <div class="brand-name">India Price Tracker</div>
+        <div class="brand-sub">Live prices · Claude AI + Web Search · Amazon IN · Flipkart · Croma</div>
+      </div>
+    </div>
+    <div class="retailers">
+      <span class="r-badge" style="color:#BA7517;border-color:#BA7517;background:#FAEEDA">Amazon IN</span>
+      <span class="r-badge" style="color:#185FA5;border-color:#185FA5;background:#E6F1FB">Flipkart</span>
+      <span class="r-badge" style="color:#0F6E56;border-color:#0F6E56;background:#E1F5EE">Croma</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="search-label">🛍️ Search any device — phones, laptops, headphones, appliances</div>
+    <div class="search-row">
+      <input class="search-input" id="deviceInput" type="text"
+        placeholder="e.g. Samsung Galaxy S25 Ultra, MacBook Air M3, Sony WH-1000XM5…"
+        onkeydown="if(event.key==='Enter')compareDevice()">
+      <button class="btn-compare" id="cmpBtn" onclick="compareDevice()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Compare Prices
+      </button>
+    </div>
+    <div class="quick-row">
+      <span class="quick-lbl">Popular:</span>
+      <span class="quick-chip" onclick="qs('Samsung Galaxy S25 Ultra 256GB')">Galaxy S25 Ultra</span>
+      <span class="quick-chip" onclick="qs('Apple iPhone 15 128GB')">iPhone 15</span>
+      <span class="quick-chip" onclick="qs('Apple iPhone 16 128GB')">iPhone 16</span>
+      <span class="quick-chip" onclick="qs('OnePlus 13 256GB')">OnePlus 13</span>
+      <span class="quick-chip" onclick="qs('MacBook Air M3 8GB 256GB')">MacBook Air M3</span>
+      <span class="quick-chip" onclick="qs('Sony WH-1000XM5')">Sony WH-1000XM5</span>
+      <span class="quick-chip" onclick="qs('Apple iPad Air M2 128GB')">iPad Air M2</span>
+      <span class="quick-chip" onclick="qs('Dyson V15 Detect')">Dyson V15</span>
+      <span class="quick-chip" onclick="qs('Google Pixel 9 Pro 128GB')">Pixel 9 Pro</span>
+    </div>
+    <div class="api-row">
+      <span class="api-lbl">Anthropic API Key</span>
+      <input class="api-input" id="apiKey" type="password" placeholder="sk-ant-api03-… — paste your key here" autocomplete="off">
+      <span class="api-note">Free at <a href="https://console.anthropic.com" target="_blank" class="api-link">console.anthropic.com</a></span>
+    </div>
+  </div>
+
+  <div id="emptyState">
+    <div class="empty">
+      <div class="empty-icon">🛒</div>
+      <div class="empty-title">Compare any device across India's top 3 retailers</div>
+      <div class="empty-sub">Enter your Anthropic API key above, search a device,<br>and get live prices from Amazon IN, Flipkart &amp; Croma in seconds.</div>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="result-hd">
+      <div>
+        <div class="result-product" id="resultProduct">—</div>
+        <div class="result-ts" id="resultTs">—</div>
+      </div>
+      <span id="liveBadge" class="live-badge" style="background:#E1F5EE;color:#085041">✓ Live</span>
+    </div>
+    <div class="g3" id="cardsGrid"></div>
+    <div class="rec" id="recCard">
+      <div class="rec-ico">🏆</div>
+      <div><div class="rec-title" id="recTitle">—</div><div class="rec-desc" id="recDesc">—</div></div>
+    </div>
+    <div class="analysis-grid">
+      <div class="acard">
+        <div class="albl">Price context</div>
+        <div class="srow2"><span>Launch / MRP</span><span class="sv" id="launchPrice">—</span></div>
+        <div class="srow2"><span>All-time low (est.)</span><span class="sv" id="atlPrice" style="color:#3B6D11">—</span></div>
+        <div class="srow2"><span>Current best</span><span class="sv" id="bestPrice">—</span></div>
+        <div class="srow2"><span>Savings vs launch</span><span class="sv" id="savPct" style="color:#3B6D11">—</span></div>
+      </div>
+      <div class="acard">
+        <div class="albl">Smart buy signals</div>
+        <div class="irow"><span class="ii">📅</span><span class="it"><b>Best time:</b> Oct Big Billion Days &amp; Jul–Aug Prime Day India offer deepest annual discounts</span></div>
+        <div class="irow"><span class="ii">💳</span><span class="it"><b>Bank offers:</b> HDFC / ICICI / SBI cards cut ₹2–5k extra on both Flipkart and Amazon</span></div>
+        <div class="irow"><span class="ii">🔄</span><span class="it"><b>Exchange bonus:</b> Trade in an older device for ₹5,000–25,000 off the final price</span></div>
+      </div>
+    </div>
+    <div class="hist-wrap" id="histWrap" style="display:none">
+      <div class="hist-hd">
+        <span style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em">Estimated price trend</span>
+        <div class="leg">
+          <span class="li"><span class="ll" style="background:#BA7517"></span>Amazon</span>
+          <span class="li"><span class="ll" style="background:#378ADD"></span>Flipkart</span>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;height:190px"><canvas id="histChart"></canvas></div>
+    </div>
+    <div class="foot" id="footNote">Prices fetched live via Anthropic Claude API + web search. Always verify on the retailer's site before purchasing.</div>
+  </div>
+</div>
+
+<script>
+const RETAILERS=[
+  {id:'amazon',label:'Amazon India',dot:'#BA7517'},
+  {id:'flipkart',label:'Flipkart',dot:'#378ADD'},
+  {id:'croma',label:'Croma',dot:'#1D9E75'}
+];
+let chartInst=null;
+const fmt=n=>(!n||n===0)?'N/A':'₹'+Math.round(n).toLocaleString('en-IN');
+
+function qs(n){document.getElementById('deviceInput').value=n;compareDevice();}
+
+function renderCards(data){
+  const grid=document.getElementById('cardsGrid');
+  grid.innerHTML='';
+  const avail=data.filter(r=>r.available!==false&&r.price>0);
+  const lo=avail.length?Math.min(...avail.map(r=>r.price)):null;
+  data.forEach(r=>{
+    const na=!r.price||r.available===false;
+    const best=!na&&r.price===lo;
+    const diff=(!na&&lo!=null)?r.price-lo:null;
+    const pill=na?`<span class="pill pna">Not listed</span>`:
+      best?`<span class="pill pbest">✓ Best price</span>`:
+      diff>5000?`<span class="pill phi">+${fmt(diff)} vs best</span>`:
+      `<span class="pill pmid">+${fmt(diff)}</span>`;
+    grid.innerHTML+=`<div class="pcard${best?' best':''}${na?' unavail':''}">
+      ${best?'<div class="wb">BEST DEAL</div>':''}
+      <div class="srow"><span class="sdot" style="background:${r.dot}"></span><span class="snm">${r.label}</span></div>
+      <div class="pv${na?' na':''}">${na?'Not available':fmt(r.price)}</div>
+      <div class="pnote">${r.note||''}</div>${pill}</div>`;
+  });
+  return lo;
+}
+
+function updateContext(p){
+  document.getElementById('launchPrice').textContent=p.launch_price?fmt(p.launch_price):'Unknown';
+  document.getElementById('atlPrice').textContent=p.all_time_low?fmt(p.all_time_low):'Unknown';
+  document.getElementById('bestPrice').textContent=p.best?fmt(p.best):'—';
+  if(p.launch_price&&p.best){
+    const pct=Math.round((p.launch_price-p.best)/p.launch_price*100);
+    document.getElementById('savPct').textContent=pct>0?`−${pct}%`:'At launch price';
+  }else document.getElementById('savPct').textContent='—';
+}
+
+function drawChart(p){
+  const wrap=document.getElementById('histWrap');
+  if(!p.launch_price||!p.best){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  const hi=p.launch_price,lo=p.best,atl=p.all_time_low||Math.round(lo*0.92);
+  const fkData=[hi,Math.round(hi*.93),Math.round((hi+lo)/2),lo];
+  const amData=[hi,Math.round(hi*.97),Math.round(hi*.91),p.amP||Math.round(lo*1.06)];
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  chartInst=new Chart(document.getElementById('histChart'),{
+    type:'line',
+    data:{labels:['Launch','6 months','12 months','Now'],datasets:[
+      {label:'Amazon',data:amData,borderColor:'#BA7517',backgroundColor:'rgba(186,117,23,.06)',borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:.35,fill:false},
+      {label:'Flipkart',data:fkData,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,.06)',borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:.35,fill:false}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
+      scales:{
+        x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#888',font:{size:11}}},
+        y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#888',font:{size:10},callback:v=>'₹'+Math.round(v/1000)+'k'},
+          min:Math.round(Math.min(atl,lo)*.93/1000)*1000,
+          max:Math.round(hi*1.07/1000)*1000}
+      }
+    }
+  });
+}
+
+async function compareDevice(){
+  const name=document.getElementById('deviceInput').value.trim();
+  if(!name){document.getElementById('deviceInput').focus();return;}
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){alert('Please enter your Anthropic API key to fetch live prices.\n\nGet it free at console.anthropic.com');return;}
+  const btn=document.getElementById('cmpBtn');
+  const badge=document.getElementById('liveBadge');
+  btn.disabled=true;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Fetching…';
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('results').style.display='block';
+  badge.style.cssText='background:#FAEEDA;color:#854F0B;font-size:11px;font-weight:700;padding:4px 11px;border-radius:5px;white-space:nowrap';
+  badge.textContent='⟳ Fetching…';
+  document.getElementById('resultProduct').textContent=name;
+  document.getElementById('resultTs').textContent='Searching live prices via Claude AI + web search…';
+  document.getElementById('cardsGrid').innerHTML=RETAILERS.map(r=>`<div class="pcard"><div class="srow"><span class="sdot" style="background:${r.dot}"></span><span class="snm">${r.label}</span></div><div class="skel" style="height:28px;width:120px;border-radius:5px;margin:4px 0 9px"></div><div class="skel" style="height:11px;width:80px;border-radius:4px"></div></div>`).join('');
+  document.getElementById('recCard').style.opacity='.35';
+  document.getElementById('histWrap').style.display='none';
+  try{
+    const today=new Date().toLocaleDateString('en-IN',{year:'numeric',month:'long',day:'numeric'});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1200,
+        system:'You are a live price comparison API for Indian retail. Use web search to find CURRENT prices. Respond ONLY with a single valid JSON object — no markdown, no explanation, no code fences.',
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:`Today is ${today}. Search for the current retail price of "${name}" in India on amazon.in, flipkart.com, and croma.com. Also find the original launch/MRP price and all-time lowest price. Return ONLY this JSON:\n{"product_name":"full canonical name with variant","amazon":{"price":NUMBER_OR_NULL,"note":"max 8 words","available":BOOL},"flipkart":{"price":NUMBER_OR_NULL,"note":"max 8 words","available":BOOL},"croma":{"price":NUMBER_OR_NULL,"note":"max 8 words","available":BOOL},"launch_price":NUMBER_OR_NULL,"all_time_low":NUMBER_OR_NULL,"recommendation":"one sentence naming best retailer and price","buy_now":BOOL,"updated":"${today}"}`}]
+      })
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'HTTP '+resp.status);}
+    const d=await resp.json();
+    const txt=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const m=txt.match(/\{[\s\S]*?"amazon"[\s\S]*?"flipkart"[\s\S]*?"croma"[\s\S]*?\}/);
+    if(!m)throw new Error('Could not parse price data from response. Try again.');
+    const p=JSON.parse(m[0]);
+    const cards=RETAILERS.map(r=>({...r,price:p[r.id]?.price||0,note:p[r.id]?.note||'',available:p[r.id]?.available!==false}));
+    const best=renderCards(cards);
+    p.best=best; p.amP=p.amazon?.price;
+    document.getElementById('resultProduct').textContent=p.product_name||name;
+    const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('resultTs').textContent=`Fetched at ${now} · ${p.updated||today} · Claude AI + web search`;
+    document.getElementById('recTitle').textContent=p.buy_now?'✅ Good time to buy':'⏳ Consider waiting for a better deal';
+    document.getElementById('recDesc').textContent=p.recommendation||'—';
+    document.getElementById('recCard').style.opacity='1';
+    updateContext(p);
+    drawChart(p);
+    badge.style.cssText='background:#E1F5EE;color:#085041;font-size:11px;font-weight:700;padding:4px 11px;border-radius:5px;white-space:nowrap';
+    badge.textContent='✓ Live data';
+    document.getElementById('footNote').textContent=`Live prices from Claude AI web search · ${p.updated||today}. Always verify on retailer site before purchasing.`;
+  }catch(e){
+    badge.style.cssText='background:#FCEBEB;color:#791F1F;font-size:11px;font-weight:700;padding:4px 11px;border-radius:5px;white-space:nowrap';
+    badge.textContent='⚠ Error';
+    document.getElementById('cardsGrid').innerHTML=`<div class="err-box">⚠ ${e.message}</div>`;
+    document.getElementById('resultTs').textContent='Fetch failed. Check your API key and try again.';
+    document.getElementById('recCard').style.opacity='1';
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Compare Prices';
+  }
+}
+</script>
+</body>
+</html>
